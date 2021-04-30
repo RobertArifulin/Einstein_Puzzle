@@ -2,6 +2,8 @@ import pygame
 import pygame_gui as pgui
 import uTypes as tp
 import random
+import re
+import copy
 
 pygame.init()
 pygame.font.init()
@@ -49,8 +51,6 @@ def generate_ans(width, height):
         for y in range(height):
             completed_cells[-1].append(y)
 
-    print(table)
-    print(completed_cells)
     return table, completed_cells
 
 
@@ -151,7 +151,7 @@ def create_condition(possibility, table, completed_cells):
             k = table[y][x][0]
             new_condition.append(f'1;{x + 1};{k}')
             new_question = f'{x + 1};{y + 1}'
-            print(new_condition)
+            new_answer = k
             for i in range(width):
                 if k not in table[y][i]:
                     table[y][i].append(k)
@@ -159,17 +159,9 @@ def create_condition(possibility, table, completed_cells):
             go = False
             for i in completed_cells:
                 if i:
-                    print(i, completed_cells)
                     go = True
-
-        print(completed_cells)
-        print(table)
-        print(possibility)
         return table, completed_cells, new_condition, new_question, new_answer
 
-    print(completed_cells)
-    print(table)
-    print(possibility)
     return table, completed_cells, [new_condition], new_question, new_answer
 
 
@@ -183,7 +175,7 @@ def convert(input):
     elif len(parts) == 2 and not parts[1][-1].isalpha():
         return f'Что в доме с номером {parts[0]} в параметре {parts[1]}?'  # Вывод вопроса
     elif parts[0] == '0':
-        return f'В ряд стоят {parts[1]} дома(ов) с {parts[2]} параметрами \n.'  # Вывод условия
+        return f'В ряд стоят {parts[1]} дома(ов) с {parts[2]} параметрами.\n'  # Вывод условия
     elif parts[0] == '1':
         return f'В доме номер {parts[1]} параметр {parts[2]}.'  # Вывод 1 типа
     elif parts[0] == '2':
@@ -197,7 +189,7 @@ def save_result(conditions, questions, answers):
 
     """Сохранение результатов в файл."""
 
-    file = open('Задачи\Условие.txt', 'w')
+    file = open(r'Задачи\Условие.txt', 'w')
     for i in conditions:
         file.write(convert(i) + '\n')
     file.write('\n')
@@ -206,7 +198,7 @@ def save_result(conditions, questions, answers):
         file.write(convert(i) + '\n')
     file.close()
 
-    file = open('Задачи\Ответ.txt', 'w')
+    file = open(r'Задачи\Ответ.txt', 'w')
     for i in questions:
         file.write(convert(i) + '\n')
     file.write('\nОтвет: \n')
@@ -216,9 +208,156 @@ def save_result(conditions, questions, answers):
     file.close()
 
 
-def solve_puzzle(conditions, question, table):
-    pass
+def solve_puzzle(conditions, questions, table):
 
+    """Решает задачу по условиям."""
+
+    height = len(table)
+    width = len(table[0])
+    completed_cells = [[] for _ in range(width)]
+    used_conditions = []
+    something_happened = True
+    answer = []
+
+    while something_happened:
+        something_happened = False
+        for condition in conditions:
+            if condition[0] == '1':
+                used_conditions.append(condition)
+                k = condition.split(';')[2]
+                x = int(condition.split(';')[1]) - 1
+                y = int(re.search(r'\d+', condition.split(';')[2]).group(0)) - 1
+                table[y][x] = [k]
+                something_happened = True
+                completed_cells[x].append(y)
+                for i in range(width):
+                    if y not in completed_cells[i]:
+                        try:
+                            table[y][i].pop(table[y][i].index(k))
+                        except ValueError:
+                            pass
+
+            if condition[0] == '2':
+                k1 = condition.split(';')[1]
+                k2 = condition.split(';')[2]
+                y1 = int(re.search(r'\d+', k1).group(0)) - 1
+                y2 = int(re.search(r'\d+', k2).group(0)) - 1
+
+                for x in range(width):
+                    if len(table[y1][x]) == 1 and table[y1][x][0] == k1:
+                        table[y2][x] = [k2]
+                        something_happened = True
+                        used_conditions.append(condition)
+                        completed_cells[x].append(y2)
+                        for i in range(width):
+                            if y2 not in completed_cells[i]:
+                                try:
+                                    table[y2][i].pop(table[y2][i].index(k2))
+                                except ValueError:
+                                    pass
+
+                    if len(table[y2][x]) == 1 and table[y2][x][0] == k2:
+                        table[y1][x] = [k1]
+                        something_happened = True
+                        used_conditions.append(condition)
+                        completed_cells[x].append(y1)
+                        for i in range(width):
+                            if y1 not in completed_cells[i]:
+                                try:
+                                    table[y1][i].pop(table[y1][i].index(k1))
+                                except ValueError:
+                                    pass
+
+            if condition[0] == '3':
+                k1 = condition.split(';')[1]
+                place = condition.split(';')[2]
+                k2 = condition.split(';')[3]
+                y1 = int(re.search(r'\d+', k1).group(0)) - 1
+                y2 = int(re.search(r'\d+', k2).group(0)) - 1
+
+                for x in range(width):
+                    if len(table[y1][x]) == 1 and table[y1][x][0] == k1:
+                        if place == "слева":
+                            x2 = x + 1
+                        else:
+                            x2 = x - 1
+                        table[y2][x2] = [k2]
+                        something_happened = True
+                        used_conditions.append(condition)
+                        completed_cells[x2].append(y2)
+                        for i in range(width):
+                            if y2 not in completed_cells[i]:
+                                try:
+                                    table[y2][i].pop(table[y2][i].index(k2))
+                                except ValueError:
+                                    pass
+
+                    if len(table[y2][x]) == 1 and table[y2][x][0] == k2:
+                        if place == "слева":
+                            x1 = x - 1
+                        else:
+                            x1 = x + 1
+                        table[y1][x1] = [k1]
+                        something_happened = True
+                        used_conditions.append(condition)
+                        completed_cells[x1].append(y1)
+                        for i in range(width):
+                            if y1 not in completed_cells[i]:
+                                try:
+                                    table[y1][i].pop(table[y1][i].index(k1))
+                                except ValueError:
+                                    pass
+
+        for used_condition in used_conditions:
+            try:
+                conditions.pop(conditions.index(used_condition))
+            except ValueError:
+                pass
+        used_conditions = []
+
+        for x in range(width):
+            for y in range(height):
+                if len(table[y][x]) == 1 and y not in completed_cells[x]:
+                    completed_cells[x].append(y)
+                    something_happened = True
+                    for i in range(width):
+                        if y not in completed_cells[i]:
+                            try:
+                                table[y][i].pop(table[y1][i].index(table[y][x][0]))
+                            except ValueError:
+                                pass
+
+
+    for x in range(width):
+        for y in range(height):
+            if len(table[y][x]) != 1:
+                return False, answer, table
+
+    for question in questions:
+        x = int(question.split(';')[0]) - 1
+        y = int(question.split(';')[1]) - 1
+        answer.append(f'{x + 1};{table[y][x][0]}')
+
+    return True, answer, table
+
+
+def removing_excess(conditions, questions, table):
+
+    """Убирает избытычность условий."""
+
+    new_conditions = conditions.copy()
+    empty_table = copy.deepcopy(table)
+    is_solved, new_answers, new_table = solve_puzzle(new_conditions.copy(), questions.copy(), empty_table)
+    while is_solved:  # Если смогло решить.
+        conditions = new_conditions.copy()
+        new_conditions = conditions.copy()
+        for i in conditions:
+            new_conditions.remove(i)  # Удаляем 1 из условий.
+            empty_table = copy.deepcopy(table)
+            is_solved, new_answers, new_table = solve_puzzle(new_conditions.copy(), questions.copy(), empty_table)   # Смотрим, смогло ли решить?
+            if is_solved:  # Если смогло запомним резульат.
+                break
+    return conditions  # Если ни разу решилось то возвращаем.
 
 
 def generate_puzzle():
@@ -226,7 +365,7 @@ def generate_puzzle():
     """Основное тело программы."""
 
     table, competed_cells = generate_ans(4, 3)
-    conditions = [f'0;{len(table[0])};{len(table)}']
+    conditions = []
     questions = []
     answers = []
     possibility = '110'
@@ -237,11 +376,26 @@ def generate_puzzle():
             conditions.append(i)
         if len(questions) < 2:
             questions.append(new_question)
-            answers.append(f'{new_question.split(";")[1]};{new_answer}')
+            answers.append(f'{new_question.split(";")[0]};{new_answer}')
+    # print(conditions)
+    random.shuffle(conditions)
+    empty_table = copy.deepcopy(table)
+    is_solved, new_answers, new_table = solve_puzzle(conditions.copy(), questions.copy(), table)
+    conditions = removing_excess(conditions, questions, empty_table).copy()
+    conditions.insert(0, f'0;{len(table[0])};{len(table)}')  # Перемешиваем утверждения и добвляем вводную
     save_result(conditions, questions, answers)
+    # print(conditions)
+    # is_solved, new_answers, new_table = solve_puzzle(conditions.copy(), questions.copy(), table)
+
+    print('________________Если совпали - хорошо___________________')
+    print(table)
+    print(new_table)
+    print(answers)
+    print(new_answers)
 
 
 generate_puzzle()
+
 
 run = False
 while run:
