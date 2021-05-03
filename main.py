@@ -1,33 +1,9 @@
 import pygame
 import pygame_gui as pgui
-import uTypes as tp
+import utypes as tp
 import random
 import re
 import copy
-
-pygame.init()
-pygame.font.init()
-out_font = pygame.font.Font(None, 30)
-manager = pgui.UIManager((tp.WIDTH, tp.HEIGHT))
-screen = pygame.display.set_mode((tp.WIDTH, tp.HEIGHT))
-pygame.display.set_caption("Генератор загадок Эйнштейна")
-clock = pygame.time.Clock()
-screen.fill(tp.WHITE)
-
-
-start_b = pgui.elements.UIButton(relative_rect=pygame.Rect((125, 20), tp.BUTTON_SIZE),
-                                 text='Начать',
-                                 manager=manager)
-
-width_input = pgui.elements.UITextEntryLine(relative_rect=pygame.Rect((200, 90), tp.INPUT_SIZE),
-                                            manager=manager)
-height_input = pgui.elements.UITextEntryLine(relative_rect=pygame.Rect((200, 160), tp.INPUT_SIZE),
-                                             manager=manager)
-
-width_input.set_allowed_characters(tp.WHITE_LIST)
-height_input.set_allowed_characters(tp.WHITE_LIST)
-width_input.set_text_length_limit(2)
-height_input.set_text_length_limit(2)
 
 
 def start_bf():
@@ -208,10 +184,10 @@ def save_result(conditions, questions, answers):
     file.close()
 
 
-def solve_puzzle(conditions, questions, table):
+def solve_puzzle(conditions, questions, table, max_deep=1):
 
     """Решает задачу по условиям."""
-
+    deep = max_deep
     height = len(table)
     width = len(table[0])
     completed_cells = [[] for _ in range(width)]
@@ -242,7 +218,6 @@ def solve_puzzle(conditions, questions, table):
                 k2 = condition.split(';')[2]
                 y1 = int(re.search(r'\d+', k1).group(0)) - 1
                 y2 = int(re.search(r'\d+', k2).group(0)) - 1
-
                 for x in range(width):
                     if len(table[y1][x]) == 1 and table[y1][x][0] == k1:
                         table[y2][x] = [k2]
@@ -281,6 +256,8 @@ def solve_puzzle(conditions, questions, table):
                             x2 = x + 1
                         else:
                             x2 = x - 1
+                        if x2 >= width or x2 < 0:
+                            return False, answer, table
                         table[y2][x2] = [k2]
                         something_happened = True
                         used_conditions.append(condition)
@@ -297,6 +274,8 @@ def solve_puzzle(conditions, questions, table):
                             x1 = x - 1
                         else:
                             x1 = x + 1
+                        if x1 >= width or x1 < 0:
+                            return False, answer, table
                         table[y1][x1] = [k1]
                         something_happened = True
                         used_conditions.append(condition)
@@ -323,14 +302,16 @@ def solve_puzzle(conditions, questions, table):
                     for i in range(width):
                         if y not in completed_cells[i]:
                             try:
-                                table[y][i].pop(table[y1][i].index(table[y][x][0]))
+                                table[y][i].pop(table[y][i].index(table[y][x][0]))
                             except ValueError:
                                 pass
-
 
     for x in range(width):
         for y in range(height):
             if len(table[y][x]) != 1:
+                is_solved, table, deep, answer = brute_force_search(copy.deepcopy(table), conditions.copy(), questions.copy(), deep)
+                if is_solved:
+                    return True, answer, table
                 return False, answer, table
 
     for question in questions:
@@ -350,14 +331,63 @@ def removing_excess(conditions, questions, table):
     is_solved, new_answers, new_table = solve_puzzle(new_conditions.copy(), questions.copy(), empty_table)
     while is_solved:  # Если смогло решить.
         conditions = new_conditions.copy()
-        new_conditions = conditions.copy()
         for i in conditions:
+            new_conditions = conditions.copy()
             new_conditions.remove(i)  # Удаляем 1 из условий.
             empty_table = copy.deepcopy(table)
             is_solved, new_answers, new_table = solve_puzzle(new_conditions.copy(), questions.copy(), empty_table)   # Смотрим, смогло ли решить?
             if is_solved:  # Если смогло запомним резульат.
                 break
     return conditions  # Если ни разу решилось то возвращаем.
+
+
+def brute_force_search(table, condition, questions, deep):
+
+    """
+    Подставляет один из вариантов и пытается решить.
+    Есть ограничение по глубине.
+    """
+
+    answer = []
+    new_table = copy.deepcopy(table)
+    if not deep:
+        return False, new_table, deep, answer
+    height = len(new_table)
+    width = len(new_table[0])
+    min_k = width + 1
+    new_cell = (-1, -1)
+
+    for y in range(height):
+        for x in range(width):
+            if 1 < len(new_table[y][x]) <= min_k:
+                min_k = len(new_table[y][x])
+                new_cell = (x, y)
+
+    x, y = new_cell
+
+
+    for option in table[y][x]:
+        backup = copy.deepcopy(new_table)
+        new_table[y][x] = [option]
+
+        for x in range(width):
+            for y in range(height):
+                if len(new_table[y][x]) == 1:
+                    remove = new_table[y][x][0]
+                    for i in range(width):
+                        if i != x:
+                            try:
+                                new_table[y][i].remove(remove)
+                            except ValueError:
+                                pass
+
+        is_solved, answer, _ = solve_puzzle(condition, questions, new_table, deep-1)
+        if is_solved:
+            return True, new_table, deep, answer
+        else:
+            new_table = copy.deepcopy(backup)
+
+    return False, copy.deepcopy(table), deep - 1, answer
 
 
 def generate_puzzle():
@@ -377,14 +407,14 @@ def generate_puzzle():
         if len(questions) < 2:
             questions.append(new_question)
             answers.append(f'{new_question.split(";")[0]};{new_answer}')
-    # print(conditions)
+    print(conditions, len(conditions))
     random.shuffle(conditions)
     empty_table = copy.deepcopy(table)
     is_solved, new_answers, new_table = solve_puzzle(conditions.copy(), questions.copy(), table)
     conditions = removing_excess(conditions, questions, empty_table).copy()
     conditions.insert(0, f'0;{len(table[0])};{len(table)}')  # Перемешиваем утверждения и добвляем вводную
     save_result(conditions, questions, answers)
-    # print(conditions)
+    print(conditions, len(conditions))
     # is_solved, new_answers, new_table = solve_puzzle(conditions.copy(), questions.copy(), table)
 
     print('________________Если совпали - хорошо___________________')
@@ -392,6 +422,31 @@ def generate_puzzle():
     print(new_table)
     print(answers)
     print(new_answers)
+
+
+pygame.init()
+pygame.font.init()
+out_font = pygame.font.Font(None, 30)
+manager = pgui.UIManager((tp.WIDTH, tp.HEIGHT))
+screen = pygame.display.set_mode((tp.WIDTH, tp.HEIGHT))
+pygame.display.set_caption("Генератор загадок Эйнштейна")
+clock = pygame.time.Clock()
+screen.fill(tp.WHITE)
+
+
+start_b = pgui.elements.UIButton(relative_rect=pygame.Rect((125, 20), tp.BUTTON_SIZE),
+                                 text='Начать',
+                                 manager=manager)
+
+width_input = pgui.elements.UITextEntryLine(relative_rect=pygame.Rect((200, 90), tp.INPUT_SIZE),
+                                            manager=manager)
+height_input = pgui.elements.UITextEntryLine(relative_rect=pygame.Rect((200, 160), tp.INPUT_SIZE),
+                                             manager=manager)
+
+width_input.set_allowed_characters(tp.WHITE_LIST)
+height_input.set_allowed_characters(tp.WHITE_LIST)
+width_input.set_text_length_limit(2)
+height_input.set_text_length_limit(2)
 
 
 generate_puzzle()
