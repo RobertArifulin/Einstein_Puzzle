@@ -18,4 +18,3 @@ LABEL_COLOR = (230, 230, 230, 255)
 
 LETTERS = [i for i in string.ascii_letters]
 LETTERS.extend(['a'+i for i in string.ascii_letters])
-print(LETTERS)
