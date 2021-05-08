@@ -3,6 +3,7 @@ import pygame_gui as pgui
 import utypes as tp
 import random
 import re
+import os
 import copy
 
 
@@ -24,7 +25,7 @@ def generate_ans(width, height):
     return table, completed_cells
 
 
-def check_possibility(completed_cells):
+def check_possibility(completed_cells, allowed_x):
     """Проверка на возможность использования разных типов утверждений."""
 
     """
@@ -47,16 +48,18 @@ def check_possibility(completed_cells):
         if i and completed_cells[i] and completed_cells[i - 1]:  # Проверка 3 типа
             result = result[:1] + '1' + result[2:]
             n += len(completed_cells[i])
-            if i < len(completed_cells) - 1 and completed_cells[i + 1]:  # Проверка 4 типа
-                result = result[:2] + '1'
-
+            if i < len(completed_cells) - 1 and completed_cells[i + 1]:
+                for x in allowed_x:  # Проверка 4 типа
+                    if x:
+                        result = result[:2] + '1'
+                        break
     if n < 2:
         return '000'
 
     return result
 
 
-def create_condition(possibility, table, completed_cells):
+def create_condition(possibility, table, completed_cells, allowed_x):
 
     """Генерация новых утверждений.
        Общий алгоритм:
@@ -139,7 +142,7 @@ def create_condition(possibility, table, completed_cells):
                 x2 = width - 2
             else:
                 x2 = x1 - random.choice([-1, 1])
-            while not completed_cells[x1] or not completed_cells[x2]:
+            while not completed_cells[x1] or not completed_cells[x2] or max([0, x1 - x2]) not in allowed_x[x1]:
                 # Пока в двух соседних слобцах не будут завершенные клетки реролим x.
                 x1 = random.randint(0, width - 1)
                 if x1 == 0:
@@ -148,6 +151,8 @@ def create_condition(possibility, table, completed_cells):
                     x2 = width - 2
                 else:  # Иначе все равно, где будет х2 относительно х1
                     x2 = x1 - random.choice([-1, 1])
+            if 1 - max([0, x1 - x2]) in allowed_x[x1]:
+                allowed_x[x1].remove(1 - max([0, x1 - x2]))
             y2 = completed_cells[x2].pop(random.randint(0, len(
                 completed_cells[x2]) - 1))  # Удаляем вторую клетку с координатами x2;y2 из массива завершенных клеток.
             y1 = completed_cells[x1][random.randint(0, len(
@@ -182,9 +187,9 @@ def create_condition(possibility, table, completed_cells):
             for i in completed_cells:  # Проверяем остались ли завершенные клетки
                 if i:
                     completed_cells_exist = True
-        return table, completed_cells, new_condition, new_question, new_answer
+        return table, completed_cells, new_condition, new_question, new_answer, allowed_x
 
-    return table, completed_cells, [new_condition], new_question, new_answer
+    return table, completed_cells, [new_condition], new_question, new_answer, allowed_x
 
 
 def convert(string):
@@ -239,23 +244,30 @@ def convert(string):
 
 def save_result(conditions, questions, answers):
     """Сохранение результатов в файл."""
+    number = 1
+    while True:
+        if os.path.exists(rf'Задачи\Условие {number}.txt'):
+            number += 1
+        else:
+            file = open(rf'Задачи\Условие {number}.txt', 'w')
+            for i in conditions:
+                file.write(convert(i) + '\n')
+            file.write('\n')
 
-    file = open(r'Задачи\Условие.txt', 'w')
-    for i in conditions:
-        file.write(convert(i) + '\n')
-    file.write('\n')
+            for i in questions:
+                file.write(convert(i) + '\n')
+            file.close()
+            break
 
-    for i in questions:
-        file.write(convert(i) + '\n')
-    file.close()
-
-    file = open(r'Задачи\Ответ.txt', 'w')
+    file = open(r'Задачи\Ответы.txt', 'a')
+    file.write(f'Задача {number}\n')
     for i in questions:
         file.write(convert(i) + '\n')
     file.write('\nОтвет: \n')
 
     for i in answers:
         file.write(convert(i) + '\n')
+    file.write('\n')
     file.close()
 
 
@@ -544,13 +556,14 @@ def generate_puzzle(width, height, deep):
     table, competed_cells = generate_ans(width, height)
     competed_table = copy.deepcopy(table)
     conditions = []
+    allowed_x = [[i for i in range(2)] for _ in range(width)]
     questions = []
     answers = []
     possibility = '110'
 
     while '1' in possibility:
-        possibility = check_possibility(competed_cells)
-        table, competed_cells, new_condition, new_question, new_answer = create_condition(possibility, table, competed_cells)
+        possibility = check_possibility(competed_cells, allowed_x)
+        table, competed_cells, new_condition, new_question, new_answer, allowed_x = create_condition(possibility, table, competed_cells, allowed_x)
         for i in new_condition:
             conditions.append(i)
         if len(questions) < 2:
@@ -578,11 +591,11 @@ def generate_puzzle(width, height, deep):
     print(new_answers1)
 
 
-def start_bf(width, height, deep, number_of_generation):
+def start_bf(width, height, deep, number_generation):
     start_b.disable()
     width_input.disable()
     height_input.disable()
-    for i in range(number_of_generation):
+    for i in range(number_generation):
         generate_puzzle(width, height, deep)
     start_b.enable()
     width_input.enable()
@@ -602,10 +615,10 @@ def get_values():
     else:
         deep = int(deep_input.text)
     if number_input.text == '':
-        number_of_generation = 1
+        number_generation = 1
     else:
-        number_of_generation = int(number_input.text)
-    return width, height, deep, number_of_generation
+        number_generation = int(number_input.text)
+    return width, height, deep, number_generation
 
 
 pygame.init()
@@ -680,11 +693,12 @@ number_label.rebuild()
 
 # print(solve_puzzle(['1;4;1b', '3;1d;слева;1a', '3;1b;слева;1e'], ['5;1', '3;1'], [[['1d', '1b', '1e', '1c', '1a'], ['1c', '1a', '1e', '1b', '1d'], ['1b', '1a', '1e', '1c', '1d'], ['1b', '1a', '1e', '1c', '1d'], ['1c', '1b', '1e', '1d', '1a']]], 1))
 # print(solve_puzzle(['2;2b;3a', '3;2d;слева;2a', '4;3a;1d', '1;1;2c', '4;2c;2b', '2;2c;3d', '1;3;2d', '3;1c;справа;3b', '3;2a;справа;1a', '4;3d;1b', '2;2a;1c', '1;4;3c'], ['2;1', '3;1'], [[['1d', '1b', '1c', '1a'], ['1c', '1a', '1d', '1b'], ['1a', '1b', '1c', '1d'], ['1c', '1d', '1a', '1b']], [['2d', '2b', '2c', '2a'], ['2b', '2a', '2c', '2d'], ['2c', '2b', '2a', '2d'], ['2b', '2c', '2a', '2d']], [['3b', '3a', '3c', '3d'], ['3d', '3c', '3a', '3b'], ['3b', '3c', '3a', '3d'], ['3a', '3c', '3d', '3b']]], 1))
+# print(solve_puzzle(['3;1a;слева;1e', '1;2;1b', '4;1b;1d', '1;4;1a', '4;1b;1c'], ['5;1', '1;1'], [[['1a', '1e', '1d', '1c', '1b'], ['1b', '1a', '1d', '1c', '1e'], ['1c', '1a', '1e', '1d', '1b'], ['1c', '1b', '1e', '1a', '1d'], ['1a', '1b', '1d', '1c', '1e']]], 1))
 
 run = True
 while run:
     time_delta = clock.tick(60) / 1000.0
-    g_width, g_height, g_deep, number_of_generation = get_values()
+    g_width, g_height, g_deep, number_generation = get_values()
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             run = False
@@ -692,7 +706,7 @@ while run:
         if event.type == pygame.USEREVENT:
             if event.user_type == pgui.UI_BUTTON_PRESSED:  # обработка нажатий на кнопки
                 if event.ui_element == start_b:
-                    start_bf(g_width, g_height, g_deep, number_of_generation)
+                    start_bf(g_width, g_height, g_deep, number_generation)
     manager.update(time_delta)
     manager.draw_ui(screen)
     pygame.display.flip()

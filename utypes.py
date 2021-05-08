@@ -17,4 +17,4 @@ BG_COLOR = (247, 247, 249, 255)
 LABEL_COLOR = (230, 230, 230, 255)
 
 LETTERS = [i for i in string.ascii_letters]
-LETTERS.extend(['a'+i for i in string.ascii_letters])
+LETTERS.extend(['a' + i for i in string.ascii_letters])
