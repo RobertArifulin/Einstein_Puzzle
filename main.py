@@ -13,9 +13,8 @@ def generate_ans(width, height):
     table = [[] for _ in range(height)]
     for i in range(height):
         letters = [j for j in tp.LETTERS[:width]]  # Создаем новый массив букв
-        table[i] = [[f'{i + 1}{letters.pop(random.randint(0, len(letters) - 1))}'] for _ in
-                    range(width)]  # Заполняем строки параметрами НОМЕР_СТРОКИ+БУКВА
-
+        table[i] = [[f'{i + 1}{letters.pop(random.randint(0, len(letters) - 1))}'] for _ in range(width)]
+        # Заполняем строки параметрами НОМЕР_СТРОКИ+БУКВА
     completed_cells = []
     for x in range(width):  # Создаем список нетронутых клеток
         completed_cells.append([])
@@ -60,7 +59,6 @@ def check_possibility(completed_cells, allowed_x):
 
 
 def create_condition(possibility, table, completed_cells, allowed_x):
-
     """Генерация новых утверждений.
        Общий алгоритм:
        Создовая новое условие, привязываем одну завершенную клетку к другой (или к дому).
@@ -88,10 +86,10 @@ def create_condition(possibility, table, completed_cells, allowed_x):
             x = random.randint(0, width - 1)
             while len(completed_cells[x]) < 2:  # Пока в столбце не будет 2 или больше завершенных клеток реролим x.
                 x = random.randint(0, width - 1)
-            y2 = completed_cells[x].pop(random.randint(0, len(
-                completed_cells[x]) - 1))  # Удаляем вторую клетку с координатами x;y2 из массива завершенных клеток.
-            y1 = completed_cells[x][random.randint(0, len(
-                completed_cells[x]) - 1)]  # К первой клетке мы прявязали утверждением вторую, ее удалять не надо.
+            y2 = completed_cells[x].pop(random.randint(0, len(completed_cells[x]) - 1))
+            # Удаляем вторую клетку с координатами x;y2 из массива завершенных клеток.
+            y1 = completed_cells[x][random.randint(0, len(completed_cells[x]) - 1)]
+            # К первой клетке мы прявязали утверждением вторую, ее удалять не надо.
             k1, k2 = table[y1][x][0], table[y2][x][0]  # Смотрим чему действительно равны параметры в клетках.
             new_condition = f'2;{k1};{k2}'  # Создаем условие
             new_question = f'{x + 1};{y2 + 1}'  # Создаем вопрос
@@ -118,10 +116,10 @@ def create_condition(possibility, table, completed_cells, allowed_x):
                     x2 = width - 2
                 else:  # Иначе все равно, где будет х2 относительно х1
                     x2 = x1 - random.choice([-1, 1])
-            y2 = completed_cells[x2].pop(random.randint(0, len(
-                completed_cells[x2]) - 1))  # Удаляем вторую клетку с координатами x2;y2 из массива завершенных клеток.
-            y1 = completed_cells[x1][random.randint(0, len(
-                completed_cells[x1]) - 1)]  # К первой клетке мы прявязали утверждением вторую, ее удалять не надо.
+            y2 = completed_cells[x2].pop(random.randint(0, len(completed_cells[x2]) - 1))
+            # Удаляем вторую клетку с координатами x2;y2 из массива завершенных клеток.
+            y1 = completed_cells[x1][random.randint(0, len(completed_cells[x1]) - 1)]
+            # К первой клетке мы прявязали утверждением вторую, ее удалять не надо.
             if x1 - x2 == 1:  # Определяем расположение х1 относительно х2
                 place = 'справа'
             else:
@@ -153,10 +151,10 @@ def create_condition(possibility, table, completed_cells, allowed_x):
                     x2 = x1 - random.choice([-1, 1])
             if 1 - max([0, x1 - x2]) in allowed_x[x1]:
                 allowed_x[x1].remove(1 - max([0, x1 - x2]))
-            y2 = completed_cells[x2].pop(random.randint(0, len(
-                completed_cells[x2]) - 1))  # Удаляем вторую клетку с координатами x2;y2 из массива завершенных клеток.
-            y1 = completed_cells[x1][random.randint(0, len(
-                completed_cells[x1]) - 1)]  # К первой клетке мы прявязали утверждением вторую, ее удалять не надо.
+            y2 = completed_cells[x2].pop(random.randint(0, len(completed_cells[x2]) - 1))
+            # Удаляем вторую клетку с координатами x2;y2 из массива завершенных клеток.
+            y1 = completed_cells[x1][random.randint(0, len(completed_cells[x1]) - 1)]
+            # К первой клетке мы прявязали утверждением вторую, ее удалять не надо.
 
             k1, k2 = table[y1][x1][0], table[y2][x2][0]  # Смотрим чему действительно равны параметры в клетках.
             new_condition = f'4;{k1};{k2}'  # Создаем условие
@@ -196,50 +194,57 @@ def convert(string):
     global g_width, g_height
     """Делает вывод красивым."""
 
-    options = {}
+    change = {}
     for i in range(1, g_height + 1):
-        options.update({f'{i}': f'{i}'})
-        options.update({f'{i}{j}': f'{i}{j}' for j in tp.LETTERS[:g_width]})
+        change.update({f'{i}': f'{i}'})
+        change.update({f'{i}{j}': f'{i}{j}' for j in tp.LETTERS[:g_width]})
     with open('Шаблоны.txt', 'r', encoding='utf-8') as file:
         i = 1
         for line in file:
             line = line.replace(' ', '').strip('\n')
-            options.update({f'{i}': f'{line.split(":")[0]}'})
+            change.update({f'{i}': f'{line.split(":")[0]}'})
             for j, option in enumerate(line.split(':')[1].split(',')):
-                options.update({f'{i}{tp.LETTERS[j]}': f'{option}'})
+                change.update({f'{i}{tp.LETTERS[j]}': f'{option}'})
             i += 1
-    parts = string.split(';')
-    if len(parts) == 2 and parts[1][-1].isalpha():
-        y = str(int(re.search(r'\d+', parts[1]).group(0)))
-        return f'В доме с номером {parts[0]} {options[y]} - {options[parts[1]]}.'  # Вывод ответа
-    elif len(parts) == 2 and not parts[1][-1].isalpha():
-        y = str(int(re.search(r'\d+', parts[1]).group(0)))
-        return f'Что в доме с номером {parts[0]} в параметре {options[y]}?'  # Вывод вопроса
-    elif parts[0] == '0':
-        start = f'В ряд стоят {parts[1]} дома(ов) с {parts[2]} параметрами(ом).\n'  # Вывод условия
+    cond = string.split(';')
+    if len(cond) == 2 and cond[1][-1].isalpha():
+        y = str(int(re.search(r'\d+', cond[1]).group(0)))
+        return f'В доме с номером {cond[0]} {change[y]} - {change[cond[1]]}.'  # Вывод ответа
+    elif len(cond) == 2 and not cond[1][-1].isalpha():
+        y = str(int(re.search(r'\d+', cond[1]).group(0)))
+        return f'Что в доме с номером {cond[0]} в параметре {change[y]}?'  # Вывод вопроса
+    elif cond[0] == '0':
+        start = f'В ряд стоят {cond[1]} дома(ов) с {cond[2]} параметрами(ом).\n'  # Вывод условия
         end = ''
         for i in range(1, g_height + 1):
-            end += options[str(i)] + ': '
+            end += change[str(i)] + ': '
             for j in tp.LETTERS[:g_width]:
-                end += options[f'{i}{j}'] + ', '
+                end += change[f'{i}{j}'] + ', '
             end = end[:-2] + '\n'
         start += end
         return start
-    elif parts[0] == '1':  # Вывод 1 типа
-        y = str(int(re.search(r'\d+', parts[2]).group(0)))
-        return f'В доме номер {parts[1]} {options[y]} - {options[parts[2]]}.'
-    elif parts[0] == '2':  # Вывод 2 типа
-        y1 = str(int(re.search(r'\d+', parts[1]).group(0)))
-        y2 = str(int(re.search(r'\d+', parts[2]).group(0)))
-        return f'В доме, в котором {options[y1]} - {options[parts[1]]}, {options[y2]} - {options[parts[2]]}.'
-    elif parts[0] == '3':  # Вывод 3 типа
-        y1 = str(int(re.search(r'\d+', parts[1]).group(0)))
-        y2 = str(int(re.search(r'\d+', parts[3]).group(0)))
-        return f'Дом, в котором {options[y1]} - {options[parts[1]]}, {parts[2]} от дома, в котором {options[y2]} - {options[parts[3]]}.'
-    elif parts[0] == '4':  # Вывод 4 типа
-        y1 = str(int(re.search(r'\d+', parts[1]).group(0)))
-        y2 = str(int(re.search(r'\d+', parts[2]).group(0)))
-        return f'Дом, в котором {options[y1]} - {options[parts[1]]}, соседний с домом, в котором {options[y2]} - {options[parts[2]]}.'
+    elif cond[0] == '1':  # Вывод 1 типа
+        y = str(int(re.search(r'\d+', cond[2]).group(0)))
+        n = change[y]
+        return f'В доме номер {cond[1]} {n} - {change[cond[2]]}.'
+    elif cond[0] == '2':  # Вывод 2 типа
+        y1 = str(int(re.search(r'\d+', cond[1]).group(0)))
+        y2 = str(int(re.search(r'\d+', cond[2]).group(0)))
+        n1 = change[y1]
+        n2 = change[y2]
+        return f'В доме, в котором {n1} - {change[cond[1]]}, {n2} - {change[cond[2]]}.'
+    elif cond[0] == '3':  # Вывод 3 типа
+        y1 = str(int(re.search(r'\d+', cond[1]).group(0)))
+        y2 = str(int(re.search(r'\d+', cond[3]).group(0)))
+        n = change[y1]
+        n2 = change[y2]
+        return f'Дом, в котором {n} - {change[cond[1]]}, {cond[2]} от дома, в котором {n2} - {change[cond[3]]}.'
+    elif cond[0] == '4':  # Вывод 4 типа
+        y1 = str(int(re.search(r'\d+', cond[1]).group(0)))
+        y2 = str(int(re.search(r'\d+', cond[2]).group(0)))
+        n1 = change[y1]
+        n2 = change[y2]
+        return f'Дом, в котором {n1} - {change[cond[1]]}, соседний с домом, в котором {n2} - {change[cond[2]]}.'
 
 
 def save_result(conditions, questions, answers):
@@ -278,21 +283,22 @@ def solve_puzzle(conditions, questions, table, deep):
     height = len(table)
     width = len(table[0])
     completed_cells = [[] for _ in range(width)]
-    last_completed_cells = []
+    last_completed_cells = []  # Порядок находжения ответов. Нужен, чтобы создать сложные вопросы.
     used_conditions = []
+    number_of_solution = 0
     something_happened = True
     answer = []
 
     while something_happened:
         something_happened = False
-        for condition in conditions:
+        for condition in conditions:  # Пытается применить каждое утверждение
             if condition[0] == '1':
                 used_conditions.append(condition)
                 k = condition.split(';')[2]
                 x = int(condition.split(';')[1]) - 1
                 y = int(re.search(r'\d+', condition.split(';')[2]).group(0)) - 1
-                if len(table[y][x]) == 1 and table[y][x][0] != k:  # Проверка на соответсвие таблицы утверждению
-                    return False, None, None, None
+                if len(table[y][x]) == 1 and table[y][x][0] != k:  # Проверка соответсвия таблицы условию.
+                    return False, None, None, None, number_of_solution
                 table[y][x] = [k]
                 if (x, y) not in last_completed_cells:
                     last_completed_cells.append((x, y))
@@ -312,8 +318,8 @@ def solve_puzzle(conditions, questions, table, deep):
                 y2 = int(re.search(r'\d+', k2).group(0)) - 1
                 for x in range(width):
                     if len(table[y1][x]) == 1 and table[y1][x][0] == k1:
-                        if len(table[y2][x]) == 1 and table[y2][x][0] != k2:  # Проверка на соответсвие таблицы утверждению
-                            return False, None, None, None
+                        if len(table[y2][x]) == 1 and table[y2][x][0] != k2:  # Проверка соответсвия таблицы условию.
+                            return False, None, None, None, number_of_solution
                         table[y2][x] = [k2]
                         if (x, y2) not in last_completed_cells:
                             last_completed_cells.append((x, y2))
@@ -328,8 +334,8 @@ def solve_puzzle(conditions, questions, table, deep):
                                     pass
 
                     if len(table[y2][x]) == 1 and table[y2][x][0] == k2:
-                        if len(table[y1][x]) == 1 and table[y1][x][0] != k1:  # Проверка на соответсвие таблицы утверждению
-                            return False, None, None, None
+                        if len(table[y1][x]) == 1 and table[y1][x][0] != k1:  # Проверка соответсвия таблицы условию.
+                            return False, None, None, None, number_of_solution
                         table[y1][x] = [k1]
                         if (x, y1) not in last_completed_cells:
                             last_completed_cells.append((x, y1))
@@ -357,9 +363,9 @@ def solve_puzzle(conditions, questions, table, deep):
                         else:
                             x2 = x - 1
                         if x2 >= width or x2 < 0:
-                            return False, None, None, None
-                        if len(table[y2][x2]) == 1 and table[y2][x2][0] != k2:  # Проверка на соответсвие таблицы утверждению
-                            return False, None, None, None
+                            return False, None, None, None, number_of_solution
+                        if len(table[y2][x2]) == 1 and table[y2][x2][0] != k2:  # Проверка соответсвия таблицы условию.
+                            return False, None, None, None, number_of_solution
                         table[y2][x2] = [k2]
                         if (x2, y2) not in last_completed_cells:
                             last_completed_cells.append((x2, y2))
@@ -379,9 +385,9 @@ def solve_puzzle(conditions, questions, table, deep):
                         else:
                             x1 = x + 1
                         if x1 >= width or x1 < 0:
-                            return False, None, None, None
-                        if len(table[y1][x1]) == 1 and table[y1][x1][0] != k1:  # Проверка на соответсвие таблицы утверждению
-                            return False, None, None, None
+                            return False, None, None, None, number_of_solution
+                        if len(table[y1][x1]) == 1 and table[y1][x1][0] != k1:  # Проверка соответсвия таблицы условию.
+                            return False, None, None, None, number_of_solution
                         table[y1][x1] = [k1]
                         if (x1, y1) not in last_completed_cells:
                             last_completed_cells.append((x1, y1))
@@ -406,13 +412,13 @@ def solve_puzzle(conditions, questions, table, deep):
                         # Если есть 2 соседа, оба завершены и параметры не соответствуют утверждению
                         if x and len(table[y2][x - 1]) == 1 and table[y2][x - 1][0] != k2:
                             if x < width - 1 and len(table[y2][x + 1]) == 1 and table[y2][x + 1][0] != k2:
-                                return False, None, None, None
+                                return False, None, None, None, number_of_solution
                         # Если есть только сосед справа, он завершен и параметр не соответствуют утверждению
                         if not x and len(table[y2][x + 1]) == 1 and table[y2][x + 1][0] != k2:
-                            return False, None, None, None
+                            return False, None, None, None, number_of_solution
                         # Если есть только сосед слева, он завершен и параметр не соответствуют утверждению
                         if x == width - 1 and len(table[y2][x - 1]) == 1 and table[y2][x - 1][0] != k2:
-                            return False, None, None, None
+                            return False, None, None, None, number_of_solution
                         something_happened = True
                         used_conditions.append(condition)
                         for i in range(width):
@@ -426,13 +432,13 @@ def solve_puzzle(conditions, questions, table, deep):
                         # Если есть 2 соседа, оба завершены и параметры не соответствуют утверждению
                         if x and len(table[y1][x - 1]) == 1 and table[y1][x - 1][0] != k1:
                             if x < width - 1 and len(table[y1][x + 1]) == 1 and table[y1][x + 1][0] != k1:
-                                return False, None, None, None
+                                return False, None, None, None, number_of_solution
                         # Если есть только сосед справа, он завершен и параметр не соответствуют утверждению
                         if not x and len(table[y1][x + 1]) == 1 and table[y1][x + 1][0] != k1:
-                            return False, None, None, None
+                            return False, None, None, None, number_of_solution
                         # Если есть только сосед слева, он завершен и параметр не соответствуют утверждению
                         if x == width - 1 and len(table[y1][x - 1]) == 1 and table[y1][x - 1][0] != k1:
-                            return False, None, None, None
+                            return False, None, None, None, number_of_solution
                         something_happened = True
                         used_conditions.append(condition)
                         for i in range(width):
@@ -442,15 +448,25 @@ def solve_puzzle(conditions, questions, table, deep):
                                 except ValueError:
                                     pass
 
-        for used_condition in used_conditions:
+        for used_condition in used_conditions:  # Удаление использованных условий.
             try:
-                conditions.pop(conditions.index(used_condition))
+                conditions.remove(used_condition)
             except ValueError:
                 pass
         used_conditions = []
 
-        for x in range(width):
+
+        for x in range(width):  # Запись в решенные клетки тех, кто был найден методом исключения.
             for y in range(height):
+                if len(table[y][x]) != 1:
+                    for i in table[y][x]:
+                        n = 0
+                        for row in table[y]:
+                            for cell in row:
+                                n += cell.count(i)
+                        if n == 1:
+                            table[y][x] = [i]
+                            break
                 if len(table[y][x]) == 1 and y not in completed_cells[x]:
                     completed_cells[x].append(y)
                     if (x, y) not in last_completed_cells:
@@ -463,26 +479,24 @@ def solve_puzzle(conditions, questions, table, deep):
                             except ValueError:
                                 pass
 
-    for x in range(width):
+    for x in range(width):  # Подсчет нерешенных клеток.
         for y in range(height):
             if len(table[y][x]) != 1:
                 incompleted_cells += 1
 
-    if incompleted_cells > 0 and not conditions:
-        return False, None, None, None
-    elif incompleted_cells > 0 and conditions:
-        is_solved, table, deep, answer, last_completed_cells = brute_force_search(copy.deepcopy(table), conditions.copy(), questions.copy(), deep, last_completed_cells)
-        if is_solved:
-            return True, answer.copy(), copy.deepcopy(table), last_completed_cells.copy()
-        else:
-            return False, None, None, None
+    if incompleted_cells > 0:
+        if deep != 'Stop':
+            is_solved, table, deep, answer, last_completed_cells, number_of_solution = brute_force_search(copy.deepcopy(table), conditions.copy(), questions.copy(), deep, last_completed_cells)
+        if deep != 'Stop' and is_solved and number_of_solution == 1 and conditions:
+            return True, answer.copy(), copy.deepcopy(table), last_completed_cells.copy(), number_of_solution
+        return False, None, None, None, number_of_solution
 
     for question in questions:
         x = int(question.split(';')[0]) - 1
         y = int(question.split(';')[1]) - 1
         answer.append(f'{x + 1};{table[y][x][0]}')
 
-    return True, answer.copy(), copy.deepcopy(table), last_completed_cells.copy()
+    return True, answer.copy(), copy.deepcopy(table), last_completed_cells.copy(), number_of_solution + 1
 
 
 def removing_excess(conditions, questions, table, deep):
@@ -490,9 +504,14 @@ def removing_excess(conditions, questions, table, deep):
 
     new_conditions = conditions.copy()
     empty_table = copy.deepcopy(table)
-    is_solved, new_answers, new_table, last_completed_cells = solve_puzzle(new_conditions.copy(), questions.copy(), copy.deepcopy(empty_table), deep)
+    is_solved, new_answers, new_table, last_completed_cells, number_of_solution = solve_puzzle(new_conditions.copy(),
+                                                                                               questions.copy(),
+                                                                                               copy.deepcopy(empty_table), deep)
+    if deep == 0:
+        deep = 'Stop'
     if not is_solved:
-        print(is_solved)
+        # print(is_solved)
+        raise Exception
         pass
     while is_solved:  # Если смогло решить.
         conditions = new_conditions.copy()
@@ -502,7 +521,8 @@ def removing_excess(conditions, questions, table, deep):
             new_conditions = conditions.copy()
             new_conditions.remove(i)  # Удаляем 1 из условий.
             empty_table = copy.deepcopy(table)
-            is_solved, new_answers, new_table, last_completed_cells = solve_puzzle(new_conditions.copy(), questions.copy(), copy.deepcopy(empty_table), deep)
+            is_solved, new_answers, new_table, last_completed_cells, number_of_solution = solve_puzzle(
+                new_conditions.copy(), questions.copy(), copy.deepcopy(empty_table), deep)
             if is_solved:  # Если смогло запомним резульат.
                 break
     return conditions.copy()  # Если ни разу решилось то возвращаем.
@@ -514,19 +534,16 @@ def brute_force_search(table, conditions, questions, deep, last_completed_cells)
     Есть ограничение по глубине.
     """
 
-    # answer = []
     final_table = []
     final_answer = []
     new_table = copy.deepcopy(table)
-    if deep < 1 and (len(conditions) != 1 or conditions[0][0] != '3'):  # Выход из рекурсии
-        return False, None, None, None, None
     height = len(new_table)
     width = len(new_table[0])
     min_k = width + 1
     min_cell = (-1, -1)
     incomplete_cells = []
     number_of_solution = 1
-
+    all_number_of_solutions = []
 
     for y in range(height):
         for x in range(width):
@@ -536,6 +553,7 @@ def brute_force_search(table, conditions, questions, deep, last_completed_cells)
                     min_k = len(new_table[y][x])
                     min_cell = (x, y)
     for new_cell in incomplete_cells:
+        all_number_of_solutions = []
         number_of_solution -= 1
         for option in table[new_cell[1]][new_cell[0]]:  # Перебор вариантов.
             new_table[new_cell[1]][new_cell[0]] = [option]  # Подстовляем вариант как ответ.
@@ -553,7 +571,9 @@ def brute_force_search(table, conditions, questions, deep, last_completed_cells)
                                 except ValueError:
                                     pass
 
-            is_solved, answer, new_table, new_last_completed_cells = solve_puzzle(conditions.copy(), questions.copy(), new_table, deep - 1)  # Пытаемся решить
+            is_solved, answer, new_table, new_last_completed_cells, old_number_of_solution = solve_puzzle(conditions.copy(), questions.copy(), new_table, deep - 1)
+            all_number_of_solutions.append(old_number_of_solution)
+            # Пытаемся решить
             if is_solved:  # Если решило inc(number_of_solution) и запоминам результаты
                 number_of_solution += 1
                 for new_last_completed_cell in new_last_completed_cells:
@@ -565,14 +585,21 @@ def brute_force_search(table, conditions, questions, deep, last_completed_cells)
             else:  # Иначе восстанавливаем таблицу.
                 last_completed_cells.remove(new_cell)
                 new_table = copy.deepcopy(table)
-        if number_of_solution != 1:
+        if number_of_solution != 1 or all_number_of_solutions.count(1) != 1 or all_number_of_solutions.count(0) != len(all_number_of_solutions) - 1:
             break
 
+        """
+        all_number_of_solutions.count(0) != len(all_number_of_solutions) - 1
+        Если это так, это значит, что у одного варианта подстановки есть только 1 решение
+        и еще есть варианты подстановки с большим кол-вом решени, т.е. есть неоднозначные решения.
+        Чтобы программа не посчитатла первый вариант правильным, добавили эту проверку.
+        """
 
-
-    if number_of_solution == 1:
-        return True, copy.deepcopy(final_table), deep - 1, final_answer.copy(), last_completed_cells
-    return False, None, deep, None, None
+    if deep < 1 and (len(conditions) != 1 or conditions[0][0] != '3'):
+        return False, None, deep, None, None, number_of_solution
+    if number_of_solution != 1 or all_number_of_solutions.count(0) != len(all_number_of_solutions) - 1:  # Выход из рекурсии
+        return False, None, deep, None, None, number_of_solution
+    return True, copy.deepcopy(final_table), deep - 1, final_answer.copy(), last_completed_cells, number_of_solution
 
 
 def generate_puzzle(width, height, deep):
@@ -588,7 +615,9 @@ def generate_puzzle(width, height, deep):
 
     while '1' in possibility:
         possibility = check_possibility(competed_cells, allowed_x)
-        table, competed_cells, new_condition, new_question, new_answer, allowed_x = create_condition(possibility, table, competed_cells, allowed_x)
+        table, competed_cells, new_condition, new_question, new_answer, allowed_x = create_condition(possibility, table,
+                                                                                                     competed_cells,
+                                                                                                     allowed_x)
         for i in new_condition:
             conditions.append(i)
         if len(questions) < 2:
@@ -600,28 +629,28 @@ def generate_puzzle(width, height, deep):
             random.shuffle(table[y][x])
 
     len1 = len(conditions)
-    print(len1)
+    # print(len1)
     random.shuffle(conditions)
     empty_table = copy.deepcopy(table)
     conditions = removing_excess(conditions, questions, empty_table, deep).copy()
-    _, _, _, last_completed_cells = solve_puzzle(conditions.copy(), questions.copy(), copy.deepcopy(table), deep)
+    _, _, _, last_completed_cells, number_of_solution = solve_puzzle(conditions.copy(), questions.copy(),
+                                                                     copy.deepcopy(table), deep)
     questions = []
     for x, y in last_completed_cells[-2:]:
         questions.append(f'{x + 1};{y + 1}')
-    is_solved, answers, new_table, last_completed_cells = solve_puzzle(conditions.copy(), questions.copy(), copy.deepcopy(table), deep)
+    is_solved, answers, new_table, last_completed_cells, number_of_solution = solve_puzzle(conditions.copy(),
+                                                                                           questions.copy(),
+                                                                                           copy.deepcopy(table), deep)
     conditions.insert(0, f'0;{len(table[0])};{len(table)}')  # Добвляем вводную часть.
     save_result(conditions, questions, answers)
     len2 = len(conditions) - 1
-    print(len2, is_solved)
+    # print(len2, is_solved)
 
-    print('________________Если совпали - хорошо___________________')
-    print(competed_table == new_table)
+    # print('________________Если True - хорошо___________________')
+    # print(competed_table == new_table)
     if not competed_table == new_table:
-        print(competed_table == new_table)
-    if len1 - len2 < height + 1:
-        print(len2)
-    print(competed_table)
-    print(new_table)
+        raise Exception
+        # print(competed_table == new_table)
 
 
 def start_bf(width, height, deep, number_generation):
@@ -634,14 +663,15 @@ def start_bf(width, height, deep, number_generation):
     width_input.enable()
     height_input.enable()
 
+
 def get_values():
-    if width_input.text == '':
+    if width_input.text == '' or width_input.text == '0':
         if not width_input.is_focused:
             width_input.set_text('4')
         width = 4
     else:
         width = int(width_input.text)
-    if height_input.text == '':
+    if height_input.text == '' or height_input.text == '0':
         if not height_input.is_focused:
             height_input.set_text('3')
         height = 3
@@ -653,13 +683,13 @@ def get_values():
         deep = 1
     else:
         deep = int(deep_input.text)
-    if number_input.text == '':
+    if number_input.text == '' or number_input.text == '0':
         if not number_input.is_focused:
             number_input.set_text('1')
-        number_generation = 1
+        generation_count = 1
     else:
-        number_generation = int(number_input.text)
-    return width, height, deep, number_generation
+        generation_count = int(number_input.text)
+    return width, height, deep, generation_count
 
 
 pygame.init()
@@ -701,7 +731,7 @@ deep_input = pgui.elements.UITextEntryLine(relative_rect=pygame.Rect((350, 230),
                                            manager=manager)
 deep_input.set_allowed_characters(tp.WHITE_LIST)
 deep_input.set_text('1')
-deep_input.set_text_length_limit(1)
+deep_input.set_text_length_limit(2)
 
 number_input = pgui.elements.UITextEntryLine(relative_rect=pygame.Rect((350, 300), tp.INPUT_SIZE),
                                              manager=manager)
@@ -709,9 +739,7 @@ number_input.set_allowed_characters(tp.WHITE_LIST)
 number_input.set_text('1')
 number_input.set_text_length_limit(2)
 
-
-
-width_label = pgui.elements.UILabel(relative_rect=pygame.Rect((125, 90), (166, 30)), text='Введите кол-во домов',
+width_label = pgui.elements.UILabel(relative_rect=pygame.Rect((140, 90), (166, 30)), text='Введите кол-во домов',
                                     manager=manager)
 width_label.bg_colour = pygame.Color(tp.BG_COLOR)
 width_label.text_colour = pygame.Color(tp.BLACK)
@@ -725,24 +753,21 @@ height_label.text_colour = pygame.Color(tp.BLACK)
 height_label.font = pygame.font.Font('arial.ttf', 16)
 height_label.rebuild()
 
-deep_label = pgui.elements.UILabel(relative_rect=pygame.Rect((125, 230), (208, 30)), text='Введите кол-во переборов',
+deep_label = pgui.elements.UILabel(relative_rect=pygame.Rect((100, 230), (245, 30)),
+                                   text='Введите макс. кол-во переборов',
                                    manager=manager)
 deep_label.bg_colour = pygame.Color(tp.BG_COLOR)
 deep_label.text_colour = pygame.Color(tp.BLACK)
 deep_label.font = pygame.font.Font('arial.ttf', 16)
 deep_label.rebuild()
 
-number_label = pgui.elements.UILabel(relative_rect=pygame.Rect((125, 300), (208, 30)), text='Введите кол-во генераций',
+number_label = pgui.elements.UILabel(relative_rect=pygame.Rect((130, 300), (200, 30)), text='Введите кол-во задач',
                                      manager=manager)
 number_label.bg_colour = pygame.Color(tp.BG_COLOR)
 number_label.text_colour = pygame.Color(tp.BLACK)
 number_label.font = pygame.font.Font('arial.ttf', 16)
 number_label.rebuild()
 
-# print(solve_puzzle(['1;4;1b', '3;1d;слева;1a', '3;1b;слева;1e'], ['5;1', '3;1'], [[['1d', '1b', '1e', '1c', '1a'], ['1c', '1a', '1e', '1b', '1d'], ['1b', '1a', '1e', '1c', '1d'], ['1b', '1a', '1e', '1c', '1d'], ['1c', '1b', '1e', '1d', '1a']]], 1))
-# print(solve_puzzle(['2;2b;3a', '3;2d;слева;2a', '4;3a;1d', '1;1;2c', '4;2c;2b', '2;2c;3d', '1;3;2d', '3;1c;справа;3b', '3;2a;справа;1a', '4;3d;1b', '2;2a;1c', '1;4;3c'], ['2;1', '3;1'], [[['1d', '1b', '1c', '1a'], ['1c', '1a', '1d', '1b'], ['1a', '1b', '1c', '1d'], ['1c', '1d', '1a', '1b']], [['2d', '2b', '2c', '2a'], ['2b', '2a', '2c', '2d'], ['2c', '2b', '2a', '2d'], ['2b', '2c', '2a', '2d']], [['3b', '3a', '3c', '3d'], ['3d', '3c', '3a', '3b'], ['3b', '3c', '3a', '3d'], ['3a', '3c', '3d', '3b']]], 1))
-# print(solve_puzzle(['3;1a;слева;1e', '1;2;1b', '4;1b;1d', '1;4;1a', '4;1b;1c'], ['5;1', '1;1'], [[['1a', '1e', '1d', '1c', '1b'], ['1b', '1a', '1d', '1c', '1e'], ['1c', '1a', '1e', '1d', '1b'], ['1c', '1b', '1e', '1a', '1d'], ['1a', '1b', '1d', '1c', '1e']]], 1))
-# print(solve_puzzle(['3;1a;справа;1d', '2;3b;2d', '2;3c;2a', '1;1;3b', '3;3d;справа;1c', '3;3b;слева;2b', '2;3c;1a'], ['2;3', '4;1'], [[['1b', '1d', '1a', '1c'], ['1b', '1a', '1d', '1c'], ['1c', '1b', '1a', '1d'], ['1d', '1a', '1c', '1b']], [['2d', '2a', '2c', '2b'], ['2d', '2b', '2c', '2a'], ['2d', '2c', '2a', '2b'], ['2c', '2a', '2b', '2d']], [['3d', '3c', '3b', '3a'], ['3b', '3c', '3d', '3a'], ['3b', '3a', '3c', '3d'], ['3d', '3b', '3a', '3c']]], 1))
 
 run = True
 while run:
