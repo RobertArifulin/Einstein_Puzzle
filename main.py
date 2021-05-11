@@ -66,7 +66,6 @@ def create_condition(possibility, table, completed_cells, allowed_x):
        Повторяем пока не закончатся завершенные клетки.
     """
 
-    height = len(table)
     width = len(table[0])
     new_condition = []
     new_question = ''
@@ -238,7 +237,7 @@ def convert(string):
         y2 = str(int(re.search(r'\d+', cond[3]).group(0)))
         n = change[y1]
         n2 = change[y2]
-        return f'Дом, в котором {n} - {change[cond[1]]}, {cond[2]} от дома, в котором {n2} - {change[cond[3]]}.'
+        return f'Дом, в котором {n} - {change[cond[1]]}, сразу {cond[2]} от дома, в котором {n2} - {change[cond[3]]}.'
     elif cond[0] == '4':  # Вывод 4 типа
         y1 = str(int(re.search(r'\d+', cond[1]).group(0)))
         y2 = str(int(re.search(r'\d+', cond[2]).group(0)))
@@ -487,8 +486,8 @@ def solve_puzzle(conditions, questions, table, deep):
     if incompleted_cells > 0:
         if deep != 'Stop':
             is_solved, table, deep, answer, last_completed_cells, number_of_solution = brute_force_search(copy.deepcopy(table), conditions.copy(), questions.copy(), deep, last_completed_cells)
-        if deep != 'Stop' and is_solved and number_of_solution == 1 and conditions:
-            return True, answer.copy(), copy.deepcopy(table), last_completed_cells.copy(), number_of_solution
+            if is_solved and number_of_solution == 1 and conditions:
+                return True, answer.copy(), copy.deepcopy(table), last_completed_cells.copy(), number_of_solution
         return False, None, None, None, number_of_solution
 
     for question in questions:
@@ -510,7 +509,6 @@ def removing_excess(conditions, questions, table, deep):
     if deep == 0:
         deep = 'Stop'
     if not is_solved:
-        # print(is_solved)
         raise Exception
         pass
     while is_solved:  # Если смогло решить.
@@ -610,7 +608,6 @@ def generate_puzzle(width, height, deep):
     conditions = []
     allowed_x = [[i for i in range(2)] for _ in range(width)]
     questions = []
-    answers = []
     possibility = '110'
 
     while '1' in possibility:
@@ -622,14 +619,11 @@ def generate_puzzle(width, height, deep):
             conditions.append(i)
         if len(questions) < 2:
             questions.append(new_question)
-            # answers.append(f'{new_question.split(";")[0]};{new_answer}')
 
     for y in range(len(table)):
         for x in range(len(table[0])):
             random.shuffle(table[y][x])
 
-    len1 = len(conditions)
-    # print(len1)
     random.shuffle(conditions)
     empty_table = copy.deepcopy(table)
     conditions = removing_excess(conditions, questions, empty_table, deep).copy()
@@ -643,11 +637,7 @@ def generate_puzzle(width, height, deep):
                                                                                            copy.deepcopy(table), deep)
     conditions.insert(0, f'0;{len(table[0])};{len(table)}')  # Добвляем вводную часть.
     save_result(conditions, questions, answers)
-    len2 = len(conditions) - 1
-    # print(len2, is_solved)
 
-    # print('________________Если True - хорошо___________________')
-    # print(competed_table == new_table)
     if not competed_table == new_table:
         raise Exception
         # print(competed_table == new_table)
